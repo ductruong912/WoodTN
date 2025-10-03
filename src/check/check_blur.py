@@ -3,86 +3,70 @@
 # Chuyển ảnh rõ (score ≥ THRESHOLD) sang thư mục mới data_netro/<tên class> (copy ảnh).
 # In danh sách ảnh mờ ra file blurry_images.txt
 
-import os
 import cv2
+import os
 import shutil
 import numpy as np
-from tqdm import tqdm
 
-CLASS_FOLDER = r"C:\WoodAI\data\data_khongtrung\Thong"
-TARGET_ROOT = r"C:\WoodAI\data\data_blur"
-THRESHOLD = 5
-CROP_SIZE = 300
+# ========== CONFIG ==========
+# Đặt đường dẫn folder ảnh gốc ở đây
+CLASS_FOLDER = "/Users/ductruong/Documents/GitHub/WoodTN/data/Bạch đàn Lạng Sơn"
 
-def get_blur_score(image, crop_size=CROP_SIZE):
-    h, w = image.shape[:2]
-    if h < crop_size or w < crop_size:
-        return 0.0
-    x = (w - crop_size) // 2
-    y = (h - crop_size) // 2
-    crop = image[y:y+crop_size, x:x+crop_size]
-    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-    return cv2.Laplacian(gray, cv2.CV_64F).var()
+BLUR_THRESHOLD = 20
 
-def imread_unicode(path):
-    try:
-        with open(path, "rb") as f:
-            bytes_array = np.asarray(bytearray(f.read()), dtype=np.uint8)
-            return cv2.imdecode(bytes_array, cv2.IMREAD_COLOR)
-    except:
-        return None
+# Thư mục để lưu ảnh rõ
+OUTPUT_FOLDER = os.path.join(CLASS_FOLDER, "clear_images")
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+# =============================
 
-def check_and_copy_clear_images(folder_path, threshold=THRESHOLD):
-    mo_anh = []
-    net_anh = []
+def variance_of_laplacian(image):
+    """Đo độ nét bằng phương pháp Laplacian Variance"""
+    return cv2.Laplacian(image, cv2.CV_64F).var()
 
-    class_name = os.path.basename(folder_path)
+def check_and_copy_clear_images(folder_path, threshold=BLUR_THRESHOLD):
+    total = 0
+    kept = 0
+    removed = 0
 
-    # folder chứa ảnh nét
-    target_clear = os.path.join(TARGET_ROOT, class_name, "clear")
-    os.makedirs(target_clear, exist_ok=True)
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
 
-    # folder chứa ảnh mờ
-    target_blur = os.path.join(TARGET_ROOT, class_name, "blur")
-    os.makedirs(target_blur, exist_ok=True)
-
-    print(f"\nĐang kiểm tra ảnh trong: {folder_path}")
-    for filename in tqdm(os.listdir(folder_path), desc="Kiểm tra", leave=False):
-        if not filename.lower().endswith((".jpg", ".jpeg", ".png")):
+        # bỏ qua folder clear_images
+        if os.path.isdir(file_path) or "clear_images" in file_path:
             continue
 
-        path = os.path.join(folder_path, filename)
-        if not os.path.isfile(path):
-            continue
-
-        image = imread_unicode(path)
+        # đọc ảnh
+        image = cv2.imread(file_path)
         if image is None:
-            print(f"Không đọc được ảnh: {filename}")
+            print(f"⚠️ Không đọc được ảnh: {filename}")
             continue
 
-        score = get_blur_score(image)
+        total += 1
 
-        try:
-            if score >= threshold:
-                shutil.copy2(path, os.path.join(target_clear, filename))
-                net_anh.append((filename, score))
-            else:
-                shutil.copy2(path, os.path.join(target_blur, filename))
-                mo_anh.append((filename, score))
-        except Exception as e:
-            print(f"Lỗi copy {filename}: {e}")
+        # chuyển grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    print(f"\nẢnh rõ (≥ {threshold}): {len(net_anh)} copy vào {target_clear}")
-    print(f"Ảnh mờ (< {threshold}): {len(mo_anh)} copy vào {target_blur}")
+        # tính sharpness
+        fm = variance_of_laplacian(gray)
 
-    with open("blurry_images.txt", "a", encoding="utf-8") as f:
-        f.write(f"\nClass: {class_name}")
-        f.write(f"\nẢnh mờ (score < {threshold}): {len(mo_anh)} ảnh\n")
-        for filename, score in sorted(mo_anh, key=lambda x: x[1]):
-            f.write(f"{filename}\t{score:.2f}\n")
+        if fm >= threshold:
+            kept += 1
+            shutil.copy(file_path, os.path.join(OUTPUT_FOLDER, filename))
+        else:
+            removed += 1
+            # Nếu muốn lưu ảnh mờ riêng thì mở comment dòng dưới
+            shutil.copy(file_path, os.path.join(folder_path, "blur_images", filename))
+
+        print(f"{filename}: sharpness={fm:.2f} --> {'OK' if fm >= threshold else 'BLUR'}")
+
+    print("\n===== SUMMARY =====")
+    print(f"Tổng ảnh: {total}")
+    print(f"Giữ lại (rõ): {kept}")
+    print(f"Lọc bỏ (mờ): {removed}")
+    print(f"Ảnh rõ được lưu trong: {OUTPUT_FOLDER}")
 
 if __name__ == "__main__":
-    if not os.path.exists(CLASS_FOLDER):
-        print(f"Không tồn tại folder: {CLASS_FOLDER}")
-    else:
-        check_and_copy_clear_images(CLASS_FOLDER)
+    print(f"Đang kiểm tra ảnh trong: {CLASS_FOLDER}")
+    check_and_copy_clear_images(CLASS_FOLDER)
+
+
