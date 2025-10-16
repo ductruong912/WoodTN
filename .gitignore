@@ -1,2 +1,6 @@
 # Bỏ qua toàn bộ thư mục data
 data/
+data_split/
+runs/
+__pycache__/
+test_outputs/

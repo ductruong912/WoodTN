@@ -2,7 +2,7 @@
 import os
 from collections import Counter
 
-folder_path = r"C:\WoodAI\data\data_crop" 
+folder_path = r"C:\Users\xuant\Documents\GitHub\WoodTN\Go_that" 
 extensions = []
 for root, dirs, files in os.walk(folder_path):
     for file in files:
