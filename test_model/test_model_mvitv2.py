@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 device = "cpu"
-pth_path = r"C:\Users\xuant\Documents\GitHub\WoodTN\mvitv2_best_acc_0.9899.pth"
+pth_path = r"C:\Users\xuant\Documents\GitHub\WoodTN\checkpoints\mvitv2_best_acc_0.9996.pth"
 test_dir = r"C:\Users\xuant\Documents\GitHub\WoodTN\Go_that"
 num_classes = 16
 batch_size = 8   

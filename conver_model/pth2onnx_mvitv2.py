@@ -3,7 +3,7 @@ import timm
 import torch.nn as nn
 
 # --- Cấu hình ---
-pth_path = r"C:\Users\xuant\Documents\GitHub\WoodTN\checkpoints\mvitv2_best_acc_0.9899.pth"
+pth_path = r"C:\Users\xuant\Documents\GitHub\WoodTN\checkpoints\mvitv2_best_acc.pth"
 num_classes = 16
 img_size = 224
 onnx_path = "mvitv2_best_acc.onnx"
